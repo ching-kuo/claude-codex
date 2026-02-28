@@ -15,8 +15,8 @@ A Claude Code setup for collaborative AI development: Claude plans with Opus, Co
   Large change                        → Codex implements
   Sonnet code-reviewer agent          → reviews diff (max 3 rounds)
 
-/sonnet-codex <task or plan file>
-  Claude Sonnet implements            → Edit/Write + self-verify
+/claude-codex <task or plan file>
+  Claude implements (any model)       → Edit/Write + self-verify
   Codex reviews uncommitted changes   → structured CRITICAL/HIGH/MEDIUM/LOW output
   Claude fixes CRITICAL/HIGH issues   → re-reviews (max 3 rounds)
   MEDIUM/LOW issues                   → user decides before delivery
@@ -118,19 +118,19 @@ Claude routes automatically:
 - **Small change** (≤2 files, ≤30 lines, no new logic) — Claude implements directly, Sonnet reviews
 - **Large change** — Codex implements, Sonnet reviews and feeds back (max 3 rounds)
 
-### Execution (Sonnet implements, Codex reviews)
+### Execution (Claude implements, Codex reviews)
 
 ```
-/sonnet-codex .claude/plan/jwt-auth.md
+/claude-codex .claude/plan/jwt-auth.md
 ```
 
 Or for a direct task:
 
 ```
-/sonnet-codex Add input validation to the registration endpoint
+/claude-codex Add input validation to the registration endpoint
 ```
 
-Claude Sonnet always implements. Codex reviews the uncommitted diff using `codex review --uncommitted`:
+Claude implements using the active model (default: Sonnet; override with `/model opus` for heavier tasks). Codex reviews the uncommitted diff using `codex review --uncommitted`:
 - **BLOCKED** (CRITICAL issues) — Claude fixes, Codex re-reviews (max 3 rounds)
 - **WARNING** (HIGH issues) — Claude fixes, Codex re-reviews (max 3 rounds)
 - **MEDIUM/LOW issues** — surfaced to user; user decides whether to fix before delivery
@@ -151,7 +151,7 @@ Commands have defaults (`plan-codex` → Opus, `execute-codex` → Sonnet). Over
 ├── commands/
 │   ├── plan-codex.md        # /plan-codex command
 │   ├── execute-codex.md     # /execute-codex command
-│   └── sonnet-codex.md      # /sonnet-codex command
+│   └── claude-codex.md      # /claude-codex command
 ├── skills/
 │   └── codex-mcp/
 │       ├── SKILL.md         # Auto-loaded Codex MCP usage knowledge
@@ -175,4 +175,4 @@ The `prompts/codex/` files are injected into `developer-instructions` on each Co
 - Plans are saved to `.claude/plan/` in your project directory — add to `.gitignore` if you don't want them committed
 - Max 3 iterations on all loops to keep token usage predictable
 - The `codex-mcp` skill auto-loads when Codex MCP tools are relevant, providing Claude with session management patterns and best practices
-- `/sonnet-codex` uses the `codex review --uncommitted` CLI (not the MCP server) — no MCP connection required for that command
+- `/claude-codex` uses the `codex review --uncommitted` CLI (not the MCP server) — no MCP connection required for that command

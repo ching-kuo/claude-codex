@@ -5,7 +5,7 @@ model: claude-sonnet-4-6
 allowed-tools: ["Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash"]
 ---
 
-# Sonnet-Codex — Claude Implements, Codex Reviews
+# Claude-Codex — Claude Implements, Codex Reviews
 
 $ARGUMENTS
 
@@ -85,7 +85,7 @@ Wait for user response before proceeding.
 | path/to/file | Modified | Description |
 
 ### Review Result
-- Implemented by: Claude Sonnet
+- Implemented by: Claude (active model)
 - Codex review: APPROVED / N issues resolved (N/3 iterations)
 - Remaining MEDIUM/LOW issues: N (skipped by user) / none
 
