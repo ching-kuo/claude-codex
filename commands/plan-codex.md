@@ -36,7 +36,7 @@ Save the returned plan to `.claude/plan/<feature-name>.md`.
 Read `~/.claude/prompts/codex/analyzer.md` and inject as `developer-instructions`.
 
 **Call `mcp__codex__codex`** (iteration 1):
-- prompt: "Audit this implementation plan for correctness, completeness, security, and edge cases. Reply APPROVED if solid, or list specific issues to fix.\n\n<plan>\n{plan content}\n</plan>"
+- prompt: "Read the plan file at `.claude/plan/<feature-name>.md` and audit it for correctness, completeness, security, and edge cases. Reply APPROVED if solid, or list specific issues to fix."
 - sandbox: "read-only"
 - approval-policy: "never"
 - developer-instructions: {content of ~/.claude/prompts/codex/analyzer.md} + "\nBe concise. Output result only, no reasoning process."
@@ -49,7 +49,7 @@ Save the returned `threadId`.
 
 **Call `mcp__codex__codex-reply`** (iterations 2-3):
 - threadId: {saved threadId}
-- prompt: "Revised plan addressing your feedback:\n\n<plan>\n{revised plan}\n</plan>\n\nReview again."
+- prompt: "The plan has been revised to address your feedback. Re-read the plan file at `.claude/plan/<feature-name>.md` and audit it again for correctness, completeness, security, and edge cases. Reply APPROVED if solid, or list specific issues to fix."
 
 After 3 iterations without APPROVED, stop and ask user for direction.
 
