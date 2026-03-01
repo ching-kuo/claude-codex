@@ -17,7 +17,7 @@ A Claude Code setup for collaborative AI development: Claude plans with Opus, Co
 
 /claude-codex <task or plan file>
   Claude implements (any model)       → Edit/Write + self-verify
-  Codex reviews uncommitted changes   → structured CRITICAL/HIGH/MEDIUM/LOW output
+  Codex reviews uncommitted changes   → Claude classifies findings by CRITICAL/HIGH/MEDIUM/LOW
   Claude fixes CRITICAL/HIGH issues   → re-reviews (max 3 rounds)
   MEDIUM/LOW issues                   → user decides before delivery
 ```
@@ -130,7 +130,7 @@ Or for a direct task:
 /claude-codex Add input validation to the registration endpoint
 ```
 
-Claude implements using the active model (default: Sonnet; override with `/model opus` for heavier tasks). Codex reviews the uncommitted diff using `codex review --uncommitted`:
+Claude implements using the active model (default: Sonnet; override with `/model opus` for heavier tasks). Codex reviews the uncommitted diff via MCP, returning a structured verdict (APPROVED / WARNING / BLOCKED):
 - **BLOCKED** (CRITICAL issues) — Claude fixes, Codex re-reviews (max 3 rounds)
 - **WARNING** (HIGH issues) — Claude fixes, Codex re-reviews (max 3 rounds)
 - **MEDIUM/LOW issues** — surfaced to user; user decides whether to fix before delivery
@@ -175,4 +175,4 @@ The `prompts/codex/` files are injected into `developer-instructions` on each Co
 - Plans are saved to `.claude/plan/` in your project directory — add to `.gitignore` if you don't want them committed
 - Max 3 iterations on all loops to keep token usage predictable
 - The `codex-mcp` skill auto-loads when Codex MCP tools are relevant, providing Claude with session management patterns and best practices
-- `/claude-codex` uses the `codex review --uncommitted` CLI (not the MCP server) — no MCP connection required for that command
+- `/claude-codex` uses the Codex MCP server for review — Codex runs `git diff HEAD` itself and returns a structured verdict only, minimising token usage

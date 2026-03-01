@@ -2,7 +2,7 @@
 description: "Claude implements, Codex reviews uncommitted changes"
 argument-hint: "<task description or path/to/plan.md>"
 model: claude-sonnet-4-6
-allowed-tools: ["Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash"]
+allowed-tools: ["Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash", "mcp__codex__codex", "mcp__codex__codex-reply"]
 ---
 
 # Claude-Codex — Claude Implements, Codex Reviews
@@ -16,7 +16,7 @@ $ARGUMENTS
 - **Sovereignty**: Claude implements; Codex is the external reviewer — do not skip review
 - **Stop-Loss**: Do not proceed to the next phase until the current phase output is validated
 - **Language**: Use English when calling tools/models; communicate with user in their language
-- **Bash only for review**: Always run `codex review --uncommitted` via Bash. Do NOT use MCP tools (`mcp__codex__codex` or any variant) for this command — if the Bash command fails, report the error to the user and stop
+- **MCP for review**: Always call Codex review via `mcp__codex__codex`. Do NOT use Bash `codex review` — it produces verbose output that wastes tokens
 
 ---
 
@@ -42,22 +42,31 @@ Run self-verification after implementing:
 
 ### Phase 3: Codex Review (max 3 iterations)
 
-**Step R1 — Run Codex Review**
+**Step R1 — Run Codex Review via MCP**
 
-```bash
-codex review --uncommitted
+Call Codex via `mcp__codex__codex` with:
+- `developer-instructions`: `"Be concise. Return only the structured verdict format. No prose."`
+- `prompt`:
+
+```
+Run `git diff HEAD` to see all uncommitted changes, then review them.
+
+Return ONLY a structured verdict in this exact format — no explanations, no prose:
+
+VERDICT: APPROVED | WARNING | BLOCKED
+
+CRITICAL: <list or 'none'>
+HIGH: <list or 'none'>
+MEDIUM: <list or 'none'>
+LOW: <list or 'none'>
 ```
 
-Codex will produce its own review output. Read it and classify findings by severity:
-- **CRITICAL / blocking** — security vulnerabilities, data loss risks, crashes
-- **HIGH** — logic bugs, missing error handling, significant quality issues
-- **MEDIUM** — code quality, performance, non-critical patterns
-- **LOW** — style, naming, minor suggestions
+Save the returned `threadId` for follow-up replies.
 
-Then determine verdict:
-- No CRITICAL or HIGH issues → **APPROVED**, go to Phase 4
-- HIGH issues only → **WARNING**, fix and re-run review, increment iteration count
-- CRITICAL issues → **BLOCKED**, fix and re-run review, increment iteration count
+Classify the verdict:
+- **APPROVED** — no CRITICAL or HIGH → go to Phase 4
+- **WARNING** — HIGH issues only → fix all, increment iteration, re-review
+- **BLOCKED** — CRITICAL issues → fix all, increment iteration, re-review
 
 **Step R2 — Fix and Re-review**
 
@@ -65,8 +74,13 @@ Address ALL CRITICAL and HIGH issues before re-reviewing:
 - Collect every CRITICAL/HIGH finding from the last review
 - Fix them all with Edit/Write in one batch
 - Run available tests/lint to verify
-- Then re-run `codex review --uncommitted` once
-- Repeat only if new CRITICAL/HIGH issues are introduced by the fixes
+- Re-call Codex via `mcp__codex__codex-reply` (reuse threadId) with:
+
+```
+Run `git diff HEAD` again to see the updated changes after fixes, then re-review.
+
+Return ONLY the structured verdict in the same format.
+```
 
 One review per iteration, not one review per fix. Stop after 3 iterations without APPROVED.
 
@@ -74,7 +88,7 @@ After 3 iterations without APPROVED, stop and report remaining issues to user.
 
 **Step R3 — MEDIUM / LOW Issues**
 
-After CRITICAL/HIGH are resolved, collect any remaining MEDIUM and LOW issues from the last review output.
+After CRITICAL/HIGH are resolved, collect any remaining MEDIUM and LOW issues from the last review.
 If any exist, ask the user:
 
 > "Codex flagged N MEDIUM/LOW issue(s) that were not fixed:
