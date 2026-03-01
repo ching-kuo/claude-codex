@@ -16,6 +16,7 @@ $ARGUMENTS
 - **Sovereignty**: Claude implements; Codex is the external reviewer — do not skip review
 - **Stop-Loss**: Do not proceed to the next phase until the current phase output is validated
 - **Language**: Use English when calling tools/models; communicate with user in their language
+- **Bash only for review**: Always run `codex review --uncommitted` via Bash. Do NOT use MCP tools (`mcp__codex__codex` or any variant) for this command — if the Bash command fails, report the error to the user and stop
 
 ---
 
@@ -44,13 +45,19 @@ Run self-verification after implementing:
 **Step R1 — Run Codex Review**
 
 ```bash
-codex review --uncommitted "Review for correctness, security, and code quality. Group findings by severity: CRITICAL, HIGH, MEDIUM, LOW. End with a single verdict line: APPROVED (no CRITICAL/HIGH issues), WARNING (HIGH issues only), or BLOCKED (CRITICAL issues found)."
+codex review --uncommitted
 ```
 
-Parse the verdict line at the end of Codex output:
-- **APPROVED** → go to Phase 4
-- **WARNING** → fix HIGH issues with Edit/Write, re-run review, increment iteration count
-- **BLOCKED** → fix CRITICAL issues with Edit/Write, re-run review, increment iteration count
+Codex will produce its own review output. Read it and classify findings by severity:
+- **CRITICAL / blocking** — security vulnerabilities, data loss risks, crashes
+- **HIGH** — logic bugs, missing error handling, significant quality issues
+- **MEDIUM** — code quality, performance, non-critical patterns
+- **LOW** — style, naming, minor suggestions
+
+Then determine verdict:
+- No CRITICAL or HIGH issues → **APPROVED**, go to Phase 4
+- HIGH issues only → **WARNING**, fix and re-run review, increment iteration count
+- CRITICAL issues → **BLOCKED**, fix and re-run review, increment iteration count
 
 **Step R2 — Fix and Re-review**
 
