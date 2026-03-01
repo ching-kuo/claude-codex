@@ -61,10 +61,14 @@ Then determine verdict:
 
 **Step R2 — Fix and Re-review**
 
-Address each CRITICAL or HIGH issue found by Codex:
-- Fix directly with Edit/Write
-- Re-run the same `codex review` command
-- Repeat until APPROVED or 3 iterations reached
+Address ALL CRITICAL and HIGH issues before re-reviewing:
+- Collect every CRITICAL/HIGH finding from the last review
+- Fix them all with Edit/Write in one batch
+- Run available tests/lint to verify
+- Then re-run `codex review --uncommitted` once
+- Repeat only if new CRITICAL/HIGH issues are introduced by the fixes
+
+One review per iteration, not one review per fix. Stop after 3 iterations without APPROVED.
 
 After 3 iterations without APPROVED, stop and report remaining issues to user.
 
