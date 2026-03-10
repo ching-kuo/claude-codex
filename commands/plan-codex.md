@@ -2,7 +2,7 @@
 description: "Claude plans with Opus, Codex audits, loop until approved"
 argument-hint: "<task description>"
 model: claude-opus-4-6
-allowed-tools: ["mcp__codex__codex", "mcp__codex__codex-reply", "Task", "Read", "Glob", "Grep", "Write", "Bash"]
+allowed-tools: ["AskUserQuestion", "mcp__codex__codex", "mcp__codex__codex-reply", "Task", "Read", "Glob", "Grep", "Write", "Bash"]
 ---
 
 # Plan-Codex — Claude Plans, Codex Audits
