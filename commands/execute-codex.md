@@ -2,7 +2,7 @@
 description: "Codex implements (large), Claude implements (small), Sonnet reviews"
 argument-hint: "<task description or path/to/plan.md>"
 model: claude-sonnet-4-6
-allowed-tools: ["mcp__codex__codex", "mcp__codex__codex-reply", "Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash"]
+allowed-tools: ["AskUserQuestion", "mcp__codex__codex", "mcp__codex__codex-reply", "Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash"]
 ---
 
 # Execute-Codex — Smart Routing: Claude (small) / Codex (large)
@@ -16,6 +16,7 @@ $ARGUMENTS
 - **Code Sovereignty**: Claude is the final authority — review and approve all changes before delivery
 - **Stop-Loss**: Do not proceed to next phase until current phase output is validated
 - **Language**: Use English when calling tools/models; communicate with user in their language
+- **Context Sanitization**: Never pass `.env`, secrets, tokens, API keys, or credentials to any external agent or MCP. Exclude files matching `.env*`, `*secret*`, `*credential*`, `*.pem`, `*.key`. Redact inline secrets before sending.
 
 ---
 
@@ -51,21 +52,52 @@ Announce your routing decision before implementing (e.g. "Small change — imple
 
 ### Route A: Small Change — Claude Implements Directly
 
-1. Apply changes using Edit/Write
-2. Run self-verification: lint / typecheck / tests if available
-3. Launch Task agent (subagent_type: "everything-claude-code:code-reviewer") with:
+**If the plan has 3+ implementation tasks**, dispatch each task to a subagent (sequentially):
+- Before each task: record `$TASK_SHA` via `git rev-parse HEAD`
+- For each task: launch a general-purpose Task agent with the task description, sanitized context files, and instruction: "Implement only this task. Run available lint/tests scoped to changed files. Report: files changed, verification result, any blockers."
+- After each subagent: run `git diff $TASK_SHA` (scoped to this task only) to verify changes, run scoped lint/tests to confirm no regressions
+- If the subagent reports a blocker: fix directly with Edit/Write or re-dispatch with failure output
+
+**If fewer than 3 tasks**: apply changes directly with Edit/Write.
+
+After all tasks complete (either path):
+1. Run self-verification: lint / typecheck / tests if available
+2. Launch Task agent (subagent_type: "everything-claude-code:code-reviewer") with:
    - `git diff HEAD`
    - Original task requirements
-4. If reviewer finds CRITICAL/HIGH issues: fix directly with Edit/Write and re-review (max 2 rounds)
-5. Go to Phase 3
+3. If reviewer finds CRITICAL/HIGH issues: fix directly with Edit/Write and re-review (max 2 rounds)
+4. Go to Phase 3
 
 ---
 
 ### Route B: Large Change — Codex First (max 3 iterations)
 
-Read `~/.claude/prompts/codex/architect.md` and inject as `developer-instructions` for implementation calls.
+**Note on agent spawning**: Codex runs in a sandboxed shell and cannot spawn Claude agents directly. Instead, Claude spawns a subagent per task — each subagent owns its Codex MCP session for that task, keeping both the main context and each Codex session scoped and clean.
 
-**Step B1 — Codex Implements**
+Read `~/.claude/prompts/codex/architect.md` and inject as `developer-instructions` for all Codex calls.
+
+**Step B1 — Dispatch per-task subagents (if plan has 3+ tasks)**
+
+For each implementation task (sequentially):
+
+1. Record `$TASK_SHA` via `git rev-parse HEAD` before dispatching
+2. Launch a general-purpose Task agent with the task description, sanitized context files, the `mcp__codex__codex` and `mcp__codex__codex-reply` tools, and instruction:
+
+```
+Call mcp__codex__codex with:
+- prompt: "Implement the following task.\n\nTask: {task}\n\nContext:\n{sanitized key file contents}"
+- sandbox: "workspace-write"
+- approval-policy: "on-failure"
+- developer-instructions: {content of ~/.claude/prompts/codex/architect.md} + "\nBe concise. Output result only, no reasoning process."
+
+Save the threadId. Run lint/tests scoped to changed files to verify. If failures, call mcp__codex__codex-reply with the threadId and failure output (max 3 retries). Report: files changed, verification result, any unresolved failures.
+```
+
+3. After each subagent: run `git diff $TASK_SHA` (scoped to this task only) to verify changes, run scoped lint/tests to confirm no regressions
+
+**Important**: Each subagent owns its own Codex `threadId`. There is no shared threadId across tasks. The outer review loop (Step B3) therefore uses the `code-reviewer` Task agent — not `mcp__codex__codex-reply` — since there is no single session to reply to.
+
+**If plan has fewer than 3 tasks**, call Codex directly:
 
 Call `mcp__codex__codex` (iteration 1) or `mcp__codex__codex-reply` (iterations 2-3):
 - prompt (first call): "Implement the following task.\n\nTask: {task}\n\nContext:\n{key file contents}"
@@ -89,7 +121,8 @@ Launch Task agent (subagent_type: "everything-claude-code:code-reviewer") with:
 
 Parse reviewer response:
 - No CRITICAL/HIGH issues → approved, go to Phase 3
-- Has issues → call `mcp__codex__codex-reply` with reviewer feedback verbatim, increment iteration count
+- Has CRITICAL/HIGH (3+ task path) → dispatch a Claude subagent per affected task with the reviewer feedback verbatim; there is no shared `threadId` to reply to, so do not call `mcp__codex__codex-reply`. After fixes, re-run `code-reviewer` (max 3 total iterations).
+- Has CRITICAL/HIGH (single Codex session path) → call `mcp__codex__codex-reply` with reviewer feedback verbatim, increment iteration count (max 3 total iterations).
 
 After 3 iterations without approval, stop and report status to user.
 

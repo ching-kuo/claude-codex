@@ -2,7 +2,7 @@
 description: "Claude implements, Codex reviews uncommitted changes"
 argument-hint: "<task description or path/to/plan.md>"
 model: claude-sonnet-4-6
-allowed-tools: ["Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash", "mcp__codex__codex", "mcp__codex__codex-reply"]
+allowed-tools: ["AskUserQuestion", "Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash", "mcp__codex__codex", "mcp__codex__codex-reply"]
 ---
 
 # Claude-Codex — Claude Implements, Codex Reviews
@@ -17,6 +17,7 @@ $ARGUMENTS
 - **Stop-Loss**: Do not proceed to the next phase until the current phase output is validated
 - **Language**: Use English when calling tools/models; communicate with user in their language
 - **MCP for review**: Always call Codex review via `mcp__codex__codex`. Do NOT use Bash `codex review` — it produces verbose output that wastes tokens
+- **Context Sanitization**: Never pass `.env`, secrets, tokens, API keys, or credentials to any external agent or MCP. Exclude files matching `.env*`, `*secret*`, `*credential*`, `*.pem`, `*.key`. Redact inline secrets before sending.
 
 ---
 
@@ -34,10 +35,21 @@ Read key files using Read, Glob, Grep. Confirm complete context before proceedin
 
 ### Phase 2: Claude Implements
 
-Apply all changes using Edit/Write tools directly.
+**If the plan has 3+ implementation tasks**, dispatch each task to a subagent to keep the main context clean:
 
-Run self-verification after implementing:
-- Lint / typecheck / tests if available (minimal related scope)
+For each task (sequentially — next task starts only after current task is verified):
+1. Record `$TASK_SHA` via `git rev-parse HEAD` before dispatching
+2. Launch a general-purpose Task agent with:
+   - The specific task description and acceptance criteria
+   - Sanitized key file contents it needs to read/modify
+   - Instruction: "Implement only this task. Run available lint/tests scoped to changed files after implementing. Report: files changed, verification result, any blockers."
+3. After the subagent completes: run `git diff $TASK_SHA` (scoped to this task only) to verify what changed, run scoped lint/tests to confirm no regressions
+4. If the subagent reports a blocker or verification fails: fix directly with Edit/Write or re-dispatch with the failure output
+
+**If the plan has fewer than 3 tasks**, implement directly with Edit/Write.
+
+After all tasks complete (either path):
+- Run lint / typecheck / tests if available (minimal related scope)
 - Fix any regressions before proceeding to review
 
 ### Phase 3: Codex Review (max 3 iterations)
