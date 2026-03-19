@@ -5,6 +5,10 @@ model: claude-sonnet-4-6
 allowed-tools: ["AskUserQuestion", "mcp__codex__codex", "mcp__codex__codex-reply", "Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash"]
 ---
 
+> **Deprecated**: This command has been converted to a skill (`/tdd-execute-codex`).
+> The skill version is recommended for new usage and supports eval-based testing.
+> This command is retained for backward compatibility (model pinning, tool restrictions).
+
 # TDD-Execute-Codex — Tests First, Smart Routing, Claude Reviews
 
 $ARGUMENTS
@@ -45,13 +49,14 @@ $ARGUMENTS
 
 **Constraint**: This phase outputs test files only. No production code, no interface stubs, no implementation scaffolds. Types/interfaces needed by tests must be defined inline within the test file or use `any`/equivalent.
 
-Launch Task agent (subagent_type: "everything-claude-code:tdd-guide") with:
+Read `tdd-specialist-role.md` from the `skills/tdd-execute-codex/` directory.
+
+Launch a general-purpose Task agent with:
 - Task description
 - Sanitized key file contents for context
 - Existing test patterns/framework info
+- Content of tdd-specialist-role.md as the agent's role context
 - Instruction: "Write failing test files ONLY. Do NOT create any production code, interfaces, or stubs. Define any needed types inline within test files. Follow RED phase only."
-
-If tdd-guide agent is unavailable, fall back to a general-purpose Task agent with the same TDD instruction above.
 
 Apply the returned test files using Write/Edit.
 
@@ -135,7 +140,7 @@ After all tasks complete (either path):
 4. If coverage tooling available: check coverage (80%+)
 5. Exception — if tests are fundamentally wrong: revise with justification, re-verify RED, re-implement
 6. Run `git add -N .` to mark any new untracked files as intent-to-add (ensures `git diff $START_SHA` includes new files)
-7. Launch Task agent (subagent_type: "everything-claude-code:code-reviewer") with:
+7. Launch Task agent (subagent_type: "feature-dev:code-reviewer") with:
    - `git diff $START_SHA` output
    - Original task requirements
 8. If CRITICAL/HIGH issues: fix with Edit/Write, re-review (max 2 rounds)
@@ -214,7 +219,7 @@ Check coverage if tooling is available (target 80%+). If unavailable, skip and n
 
 Run `git add -N .` to mark any new untracked files as intent-to-add (ensures `git diff $START_SHA` includes new files).
 
-Launch Task agent (subagent_type: "everything-claude-code:code-reviewer") with:
+Launch Task agent (subagent_type: "feature-dev:code-reviewer") with:
 - `git diff $START_SHA` output
 - Original task requirements
 

@@ -5,6 +5,10 @@ model: claude-opus-4-6
 allowed-tools: ["AskUserQuestion", "mcp__codex__codex", "mcp__codex__codex-reply", "Task", "Read", "Glob", "Grep", "Write", "Bash"]
 ---
 
+> **Deprecated**: This command has been converted to a skill (`/plan-codex`).
+> The skill version is recommended for new usage and supports eval-based testing.
+> This command is retained for backward compatibility (model pinning, tool restrictions).
+
 # Plan-Codex — Claude Plans, Codex Audits
 
 $ARGUMENTS
@@ -24,8 +28,8 @@ $ARGUMENTS
 
 ### Phase 1: Plan Creation
 
-Launch a Task agent (subagent_type: "everything-claude-code:planner") with the task description.
-The planner agent will research the codebase and return a structured implementation plan.
+Launch a Task agent (subagent_type: "Plan") with the task description.
+The Plan agent will research the codebase and return a structured implementation plan.
 
 If requirements are ambiguous before launching the planner, ask clarifying questions first.
 

@@ -1,23 +1,37 @@
 # claude-codex
 
-A Claude Code setup for collaborative AI development: Claude plans with Opus, Codex implements or reviews, Sonnet implements or reviews. Three commands drive a structured plan → implement → review loop.
+A Claude Code setup for collaborative AI development: Claude plans with Opus, Codex implements or reviews, Sonnet implements or reviews. Five skills (and their equivalent commands) drive a structured plan → implement → review loop.
+
+## Skills (Recommended)
+
+Skills are the primary interface. They support eval-based testing via skill-creator and are easier to iterate on than commands.
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| `plan-codex` | `/plan-codex <task>` | Claude plans with Opus, Codex audits for correctness/completeness/security until approved |
+| `claude-codex` | `/claude-codex <task or plan>` | Claude implements, Codex reviews with APPROVED/WARNING/BLOCKED verdicts |
+| `execute-codex` | `/execute-codex <task or plan>` | Smart size-based routing: Claude (small) or Codex (large) implements, code-reviewer reviews |
+| `tdd-claude-codex` | `/tdd-claude-codex <task or plan>` | TDD: Claude writes tests, Codex audits tests, Claude implements, Codex reviews implementation |
+| `tdd-execute-codex` | `/tdd-execute-codex <task or plan>` | TDD: Claude writes tests, Codex audits tests, smart routing for implementation, code-reviewer reviews |
+
+Commands (`commands/`) are retained for backward compatibility — they support model pinning and explicit `allowed-tools` restrictions that skills cannot enforce.
 
 ## How It Works
 
 ```
 /plan-codex <task>
-  Claude Opus + planner agent → creates structured plan
+  Claude Opus + Plan agent    → creates structured plan
   Codex audits the plan       → flags issues (max 3 rounds)
   Plan saved to .claude/plan/<feature>.md
 
 /execute-codex <task or plan file>
   Small change (≤2 files, ≤30 lines) → Claude implements directly
   Large change                        → Codex implements
-  Sonnet code-reviewer agent          → reviews diff (max 3 rounds)
+  feature-dev code-reviewer agent      → reviews diff (max 3 rounds)
 
 /claude-codex <task or plan file>
   Claude implements (any model)       → Edit/Write + self-verify
-  Codex reviews uncommitted changes   → Claude classifies findings by CRITICAL/HIGH/MEDIUM/LOW
+  Codex reviews uncommitted changes   → returns structured verdict (APPROVED/WARNING/BLOCKED)
   Claude fixes CRITICAL/HIGH issues   → re-reviews (max 3 rounds)
   MEDIUM/LOW issues                   → user decides before delivery
 ```
@@ -40,14 +54,14 @@ Authenticate with your OpenAI API key:
 export OPENAI_API_KEY=your-key-here
 ```
 
-### 3. everything-claude-code plugin
+### 3. feature-dev plugin
 
-This setup uses the `planner` and `code-reviewer` agents from [everything-claude-code](https://github.com/affaan-m/everything-claude-code).
+This setup uses the `code-reviewer` agent from [claude-plugins-official](https://github.com/anthropics/claude-plugins-official).
 
-Follow the installation instructions in that repo, then install the plugin in Claude Code:
+Install the plugin in Claude Code:
 
 ```
-/plugin install everything-claude-code@everything-claude-code
+claude plugin add claude-plugins-official/feature-dev
 ```
 
 ## Installation
@@ -58,9 +72,9 @@ Follow the installation instructions in that repo, then install the plugin in Cl
 git clone https://github.com/<your-username>/claude-codex
 cd claude-codex
 
-cp -r commands/* ~/.claude/commands/
 cp -r skills/*   ~/.claude/skills/
 cp -r prompts/*  ~/.claude/prompts/
+cp -r commands/* ~/.claude/commands/   # optional: for model pinning / tool restrictions
 ```
 
 ### 2. Configure Codex
@@ -100,7 +114,7 @@ Verify the MCP server is connected:
 /plan-codex Add JWT authentication to the API
 ```
 
-Claude Opus uses the `planner` agent to research your codebase and produce a structured plan. Codex audits it for correctness, security, and completeness. The approved plan is saved to `.claude/plan/<feature>.md`.
+Claude Opus uses the built-in `Plan` agent to research your codebase and produce a structured plan. Codex audits it for correctness, security, and completeness. The approved plan is saved to `.claude/plan/<feature>.md`.
 
 ### Execution (Codex implements, Sonnet reviews)
 
@@ -148,18 +162,41 @@ Commands have defaults (`plan-codex` → Opus, `execute-codex` → Sonnet). Over
 
 ```
 ~/.claude/
-├── commands/
-│   ├── plan-codex.md        # /plan-codex command
-│   ├── execute-codex.md     # /execute-codex command
-│   └── claude-codex.md      # /claude-codex command
 ├── skills/
-│   └── codex-mcp/
-│       ├── SKILL.md         # Auto-loaded Codex MCP usage knowledge
-│       └── reference.md     # Detailed patterns and examples
+│   ├── codex-mcp/
+│   │   ├── SKILL.md                  # Auto-loaded Codex MCP usage knowledge
+│   │   └── reference.md              # Detailed patterns and examples
+│   ├── plan-codex/
+│   │   ├── SKILL.md                  # /plan-codex skill
+│   │   ├── codex-analyzer-role.md    # Bundled Codex role for plan auditing
+│   │   └── evals/evals.json          # Eval scenarios for skill-creator
+│   ├── claude-codex/
+│   │   ├── SKILL.md                  # /claude-codex skill
+│   │   └── evals/evals.json
+│   ├── execute-codex/
+│   │   ├── SKILL.md                  # /execute-codex skill
+│   │   ├── codex-architect-role.md   # Bundled Codex role for implementation
+│   │   └── evals/evals.json
+│   ├── tdd-claude-codex/
+│   │   ├── SKILL.md                  # /tdd-claude-codex skill
+│   │   ├── codex-analyzer-role.md    # Bundled Codex role for test auditing
+│   │   ├── tdd-specialist-role.md    # Bundled TDD specialist role for test writing
+│   │   └── evals/evals.json
+│   └── tdd-execute-codex/
+│       ├── SKILL.md                  # /tdd-execute-codex skill
+│       ├── codex-architect-role.md   # Bundled Codex role for implementation
+│       ├── tdd-specialist-role.md    # Bundled TDD specialist role for test writing
+│       └── evals/evals.json
+├── commands/                         # Deprecated — retained for backward compatibility
+│   ├── plan-codex.md
+│   ├── execute-codex.md
+│   ├── claude-codex.md
+│   ├── tdd-claude-codex.md
+│   └── tdd-execute-codex.md
 └── prompts/
     └── codex/
-        ├── analyzer.md      # Codex role: plan auditor
-        ├── architect.md     # Codex role: implementer
+        ├── analyzer.md      # Codex role: plan auditor (source for skill bundles)
+        ├── architect.md     # Codex role: implementer (source for skill bundles)
         └── reviewer.md      # Codex role: code reviewer
 ```
 
@@ -168,7 +205,7 @@ The `prompts/codex/` files are injected into `developer-instructions` on each Co
 ## Credits
 
 - `prompts/codex/` role prompts (`analyzer.md`, `architect.md`, `reviewer.md`) are sourced from [ccg-workflow](https://github.com/fengshao1227/ccg-workflow) by fengshao1227, licensed under MIT.
-- `planner` and `code-reviewer` agents are from [everything-claude-code](https://github.com/affaan-m/everything-claude-code), licensed under MIT.
+- TDD specialist prompt adapted from [everything-claude-code](https://github.com/affaan-m/everything-claude-code) by affaan-m, licensed under MIT. `code-reviewer` agent from [claude-plugins-official/feature-dev](https://github.com/anthropics/claude-plugins-official).
 
 ## Notes
 

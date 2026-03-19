@@ -10,3 +10,14 @@
 # Backups
 *.bak
 *.bk
+
+# Skill eval workspaces and generated artifacts
+skills/*-workspace/
+skills/combined-workspace/
+skills/benchmark.json
+
+# Generated application code from skill evals
+src/
+package.json
+package-lock.json
+node_modules/

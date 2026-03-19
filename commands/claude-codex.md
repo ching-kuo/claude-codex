@@ -5,6 +5,10 @@ model: claude-sonnet-4-6
 allowed-tools: ["AskUserQuestion", "Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash", "mcp__codex__codex", "mcp__codex__codex-reply"]
 ---
 
+> **Deprecated**: This command has been converted to a skill (`/claude-codex`).
+> The skill version is recommended for new usage and supports eval-based testing.
+> This command is retained for backward compatibility (model pinning, tool restrictions).
+
 # Claude-Codex — Claude Implements, Codex Reviews
 
 $ARGUMENTS

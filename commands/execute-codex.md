@@ -5,6 +5,10 @@ model: claude-sonnet-4-6
 allowed-tools: ["AskUserQuestion", "mcp__codex__codex", "mcp__codex__codex-reply", "Task", "Read", "Glob", "Grep", "Write", "Edit", "Bash"]
 ---
 
+> **Deprecated**: This command has been converted to a skill (`/execute-codex`).
+> The skill version is recommended for new usage and supports eval-based testing.
+> This command is retained for backward compatibility (model pinning, tool restrictions).
+
 # Execute-Codex — Smart Routing: Claude (small) / Codex (large)
 
 $ARGUMENTS
@@ -62,7 +66,7 @@ Announce your routing decision before implementing (e.g. "Small change — imple
 
 After all tasks complete (either path):
 1. Run self-verification: lint / typecheck / tests if available
-2. Launch Task agent (subagent_type: "everything-claude-code:code-reviewer") with:
+2. Launch Task agent (subagent_type: "feature-dev:code-reviewer") with:
    - `git diff HEAD`
    - Original task requirements
 3. If reviewer finds CRITICAL/HIGH issues: fix directly with Edit/Write and re-review (max 2 rounds)
@@ -115,7 +119,7 @@ If failures: fix regressions before proceeding to review.
 
 **Step B3 — Code Review (Claude Sonnet)**
 
-Launch Task agent (subagent_type: "everything-claude-code:code-reviewer") with:
+Launch Task agent (subagent_type: "feature-dev:code-reviewer") with:
 - `git diff HEAD`
 - Original task requirements
 

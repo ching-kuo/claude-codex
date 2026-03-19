@@ -20,8 +20,8 @@ Add two new commands that mirror the existing `claude-codex` and `execute-codex`
 
 ## Reused Components
 
-- **Agent**: `everything-claude-code:tdd-guide` — writes failing tests and verifies RED phase. Available via `~/.claude/plugins/marketplaces/everything-claude-code/agents/tdd-guide.md`. If unavailable, fall back to inline TDD instructions within the Task agent prompt.
-- **Agent**: `everything-claude-code:code-reviewer` — used in tdd-execute-codex for review
+- **Agent**: general-purpose Task agent with bundled `tdd-specialist-role.md` — writes failing tests and verifies RED phase.
+- **Agent**: `feature-dev:code-reviewer` — used in tdd-execute-codex for review
 - **MCP**: `mcp__codex__codex` / `mcp__codex__codex-reply` — Codex review loop (tdd-claude-codex) and Codex implementation (tdd-execute-codex)
 - **Prompt**: `~/.claude/prompts/codex/analyzer.md` — injected as developer-instructions for Codex review
 - **Prompt**: `~/.claude/prompts/codex/architect.md` — injected as developer-instructions for Codex implementation
@@ -75,7 +75,7 @@ Before passing file contents to any external agent (Task agent or Codex MCP):
 
 **Allowed output**: Test files only. No production code, no interface stubs, no implementation scaffolds. If imports require types/interfaces that do not exist yet, use inline type definitions within the test file or `any`/equivalent.
 
-- Launch Task agent (subagent_type: "everything-claude-code:tdd-guide") with:
+- Launch Task agent (subagent_type: "general-purpose (with tdd-specialist-role.md)") with:
   - Task description
   - Sanitized key file contents for context
   - Existing test patterns/framework info
@@ -267,4 +267,4 @@ After 3 iterations without approval, stop and report.
 10. **Diff scoping via $START_SHA + git add -N** — all reviews use `git diff $START_SHA` scoped to command changes; `git add -N .` is run before each review to mark untracked new files as intent-to-add; dirty worktrees are rejected (user must commit or stash first)
 11. **Claude owns all test changes in Route B** — in tdd-execute-codex large-change route, Claude makes any post-RED test corrections or coverage additions, never Codex
 12. **MEDIUM/LOW triage** — both commands ask the user before fixing lower-severity review findings, consistent with existing `/claude-codex` behavior
-13. **Agent fallback** — if `everything-claude-code:tdd-guide` is unavailable, falls back to general-purpose Task agent with inline TDD instructions
+13. **Bundled TDD role** — TDD specialist prompt is bundled as `tdd-specialist-role.md` alongside each TDD skill, used as role context for a general-purpose Task agent
