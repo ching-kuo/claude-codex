@@ -91,7 +91,11 @@ After all tasks complete (either path):
 
 ### Route B: Large Change — Codex First (max 3 iterations)
 
-**MANDATORY Codex availability check**: `mcp__codex__codex` MUST be listed in the available tools (either in the tool list or in `<available-deferred-tools>`). If the tool is genuinely absent from both locations, **fall back to Claude direct implementation**: announce "Codex unavailable — falling back to Claude direct implementation." and execute Route A instead (Claude implements directly, code-reviewer reviews). Do not stop — Route A is a valid alternative.
+**MANDATORY**: When Route B is selected, you MUST NOT use Edit/Write tools for implementation. All implementation MUST go through `mcp__codex__codex`. Claude's role in Route B is context retrieval, verification, and review — not implementation. The ONLY exception is fixing minor regressions found during self-verification (Step B2) that are clearly caused by Codex output (e.g. a missing import, a typo in a generated file).
+
+**No post-routing rationalization**: Once Route B is selected, the routing decision applies to ALL tasks in the plan. Do NOT re-evaluate individual tasks for complexity. If you find yourself thinking "this task is simple enough to do directly" or "this is just a deletion" — STOP. That is the routing decision being second-guessed. The routing already accounted for overall complexity. Every task goes through Codex.
+
+**Codex availability check**: `mcp__codex__codex` MUST be listed in the available tools (either in the tool list or in `<available-deferred-tools>`). If the tool is genuinely absent from both locations (i.e. the MCP server is not configured or not responding), fall back to Route A and announce: "Codex MCP unavailable — falling back to Claude direct implementation." This fallback is ONLY for when `mcp__codex__codex` is technically inaccessible. It MUST NOT be used because a task seems "too simple for Codex" or because Claude judges direct editing would be faster.
 
 **Note on agent spawning**: Codex runs in a sandboxed shell and cannot spawn Claude agents directly. Instead, Claude spawns a subagent per task — each subagent owns its Codex MCP session for that task, keeping both the main context and each Codex session scoped and clean.
 
