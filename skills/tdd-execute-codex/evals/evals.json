@@ -1,0 +1,68 @@
+{
+  "skill_name": "tdd-execute-codex",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": ".claude/plan/projects-crud-api.md",
+      "expected_output": "Claude reads the plan file, extracts tasks, writes tests (RED), Codex audits tests, classifies as large, routes to Codex for implementation, code-reviewer reviews.",
+      "files": [],
+      "expectations": [
+        "Claude reads the plan file at .claude/plan/projects-crud-api.md (Read tool called on the path)",
+        "Claude extracts task description and implementation steps from the plan",
+        "Claude writes test files first and verifies they FAIL (RED)",
+        "Claude reads tdd-specialist-role.md for test writing guidance",
+        "Claude calls mcp__codex__codex for test audit (Phase 3) before implementing",
+        "Claude classifies as large change (4+ production files) — excludes test files from size calculation",
+        "Claude announces 'Large change — routing to Codex' before implementing",
+        "Claude reads codex-architect-role.md and includes it in Codex developer-instructions",
+        "Codex call includes test file contents in the prompt so Codex can make tests pass",
+        "Codex developer-instructions include 'Do not modify test files'",
+        "Claude launches code-reviewer Task agent (not mcp__codex__codex-reply) for final review",
+        "Delivery includes TDD summary and Route: Large (Codex)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Fix the off-by-one error in the pagination helper — it returns 11 items when limit is 10.",
+      "expected_output": "Claude writes tests (RED), Codex audits, classifies as small, implements directly, code-reviewer reviews.",
+      "files": [],
+      "expectations": [
+        "Claude writes test files first and verifies they FAIL (RED)",
+        "Claude calls mcp__codex__codex for test audit (Phase 3)",
+        "Claude classifies as small change (1-2 files, <=30 lines implementation)",
+        "Claude announces 'Small change — implementing directly'",
+        "Claude implements with Edit/Write (not Codex MCP)",
+        "Claude verifies tests pass (GREEN) after implementation",
+        "Claude launches code-reviewer Task agent after implementation",
+        "Delivery includes TDD summary and Route: Small (Claude)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add logging middleware to all API routes using TDD.",
+      "expected_output": "Claude detects dirty worktree and stops before writing tests.",
+      "files": [],
+      "expectations": [
+        "Claude checks git status in Phase 1 for uncommitted changes",
+        "Claude detects dirty worktree",
+        "Claude stops and asks the user to commit or stash",
+        "Claude does NOT write test files or proceed to Phase 2"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add file upload validation to the attachment endpoint — check file type, size limit, and virus scan hook — using TDD.",
+      "expected_output": "Claude writes tests, classifies as large, but Codex is unavailable — falls back to Claude implementation with code-reviewer.",
+      "files": [],
+      "expectations": [
+        "Claude writes test files first and verifies RED",
+        "Claude checks for mcp__codex__codex at Phase 3 and notes 'Codex unavailable — skipping audit'",
+        "Claude classifies as large change (3+ production files)",
+        "Claude checks for mcp__codex__codex at Route B and detects it's unavailable",
+        "Claude falls back to Claude direct implementation (does NOT stop)",
+        "Claude launches code-reviewer Task agent for review",
+        "Claude delivers successfully despite Codex being unavailable"
+      ]
+    }
+  ]
+}

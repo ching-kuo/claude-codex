@@ -1,0 +1,61 @@
+{
+  "skill_name": "plan-codex",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Plan adding JWT authentication to the API with refresh tokens, token rotation, and logout support.",
+      "expected_output": "Claude launches a Plan agent, saves plan to .claude/plan/, calls Codex with read-only sandbox for audit, iterates until APPROVED, presents plan and stops.",
+      "files": [],
+      "expectations": [
+        "Claude launches a Task agent with subagent_type 'Plan' for plan creation",
+        "Claude saves the plan to .claude/plan/<feature-name>.md using Write tool",
+        "Claude reads codex-analyzer-role.md from the skill directory",
+        "Claude calls mcp__codex__codex with sandbox set to 'read-only'",
+        "The Codex call includes developer-instructions from codex-analyzer-role.md",
+        "Claude presents the plan and instructs user to run /execute-codex to implement",
+        "Claude does NOT modify any production code",
+        "Claude does NOT auto-execute the plan"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Plan migrating our environment variable configuration from process.env usage scattered across files to a typed config module with validation.",
+      "expected_output": "Claude creates plan, Codex audits with issues, Claude revises and re-submits via codex-reply, eventually APPROVED.",
+      "files": [],
+      "expectations": [
+        "Claude saves the plan to .claude/plan/ before calling Codex",
+        "Claude calls mcp__codex__codex with approval-policy 'never' (read-only audit)",
+        "If Codex returns issues, Claude revises the plan file before re-auditing",
+        "Claude uses mcp__codex__codex-reply (not a new mcp__codex__codex call) for iterations 2-3",
+        "Claude reuses the saved threadId for follow-up audit calls",
+        "After 3 iterations without APPROVED, Claude stops and asks user for direction"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Plan something for the backend.",
+      "expected_output": "Claude asks clarifying questions before launching the planner — the input is too vague.",
+      "files": [],
+      "expectations": [
+        "Claude identifies the input as ambiguous or lacking detail",
+        "Claude asks the user clarifying questions before proceeding",
+        "Claude does NOT launch the Plan agent with the vague description as-is",
+        "Claude uses AskUserQuestion or outputs a question to the user"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Plan adding a WebSocket notification system for real-time order updates.",
+      "expected_output": "Claude detects Codex MCP is unavailable and stops — does NOT deliver an unaudited plan.",
+      "files": [],
+      "expectations": [
+        "Claude launches Plan agent and creates the plan successfully",
+        "Claude checks for mcp__codex__codex availability before Phase 2",
+        "Claude stops and tells the user that Codex MCP is not available",
+        "Claude mentions the audit loop is this skill's core value",
+        "Claude does NOT deliver the plan without Codex audit",
+        "Claude does NOT fall back to a non-Codex review"
+      ]
+    }
+  ]
+}

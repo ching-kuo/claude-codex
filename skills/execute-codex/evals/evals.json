@@ -1,0 +1,60 @@
+{
+  "skill_name": "execute-codex",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Fix the typo in the error message in user.service.ts line 42 — it says 'Uzer' instead of 'User'.",
+      "expected_output": "Claude classifies as small change, implements directly with Edit, launches code-reviewer agent, delivers.",
+      "files": [],
+      "expectations": [
+        "Claude announces routing decision containing 'Small change' before implementing",
+        "Claude implements with Edit or Write tools (not mcp__codex__codex)",
+        "Claude does NOT call mcp__codex__codex for implementation",
+        "Claude launches a code-reviewer Task agent (feature-dev:code-reviewer) after implementation",
+        "Claude delivers with a table showing Route: Small (Claude)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add a caching layer with Redis to the user service, session service, and product service — including connection pooling, cache invalidation, and TTL configuration.",
+      "expected_output": "Claude classifies as large change, reads codex-architect-role.md, routes to Codex via MCP, launches code-reviewer after.",
+      "files": [],
+      "expectations": [
+        "Claude announces routing decision containing 'Large change' before implementing",
+        "Claude reads codex-architect-role.md from the skill directory",
+        "Claude calls mcp__codex__codex with sandbox set to 'workspace-write'",
+        "The Codex call includes developer-instructions from codex-architect-role.md",
+        "Claude launches a code-reviewer Task agent after Codex implementation",
+        "Claude delivers with a table showing Route: Large (Codex)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Refactor the authentication middleware to use async/await instead of callbacks, update all 4 route files that import it, and add proper error handling.",
+      "expected_output": "Claude classifies as large, detects Codex is unavailable, falls back to Route A (Claude direct implementation) instead of stopping.",
+      "files": [],
+      "expectations": [
+        "Claude classifies this as a large change (4+ files, new logic)",
+        "Claude checks for mcp__codex__codex availability",
+        "Claude announces fallback: 'Codex unavailable' and falls back to direct implementation",
+        "Claude does NOT stop or tell the user to add Codex — it proceeds with Route A",
+        "Claude launches code-reviewer Task agent after implementation",
+        "Claude delivers successfully despite Codex being unavailable"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add a new 'preferences' column to the users table and update the user model, migration, seed file, and API response serializer.",
+      "expected_output": "Claude classifies as large (4 files), dispatches per-task subagents since there are 4+ implementation tasks.",
+      "files": [],
+      "expectations": [
+        "Claude identifies 4+ implementation tasks and dispatches Task subagents",
+        "Claude records git SHA before each subagent (git rev-parse HEAD)",
+        "Each subagent gets the mcp__codex__codex tool and codex-architect-role.md instructions",
+        "Claude runs git diff after each subagent to verify scoped changes",
+        "Claude launches code-reviewer after all subagents complete (not mcp__codex__codex-reply)",
+        "Claude notes that each subagent owns its own Codex threadId"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "skill_name": "tdd-claude-codex",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": ".claude/plan/email-validation.md",
+      "expected_output": "Claude reads the plan file, extracts task description and steps, writes tests first (RED), Codex audits tests, Claude implements (GREEN), refactors (IMPROVE), Codex reviews final implementation.",
+      "files": [],
+      "expectations": [
+        "Claude reads the plan file at .claude/plan/email-validation.md (Read tool called on the path)",
+        "Claude extracts task description and implementation steps from the plan",
+        "Claude writes test files BEFORE any production code (RED phase)",
+        "Claude runs new tests and verifies they FAIL before implementing",
+        "Claude reads tdd-specialist-role.md from the skill directory",
+        "Claude calls mcp__codex__codex for test audit (Phase 3) with test-focused verdict prompt",
+        "Claude implements minimal code to make tests pass (GREEN phase)",
+        "Claude calls mcp__codex__codex for implementation review (Phase 6) with 'git diff $START_SHA'",
+        "Phase 6 Codex call is a separate mcp__codex__codex call (not reusing Phase 3 threadId)",
+        "Delivery includes TDD summary with test count, coverage, and RED/GREEN confirmation"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add a feature that partially exists — extend the existing password validation to also check for special characters.",
+      "expected_output": "Claude writes tests, discovers they pass unexpectedly in RED, revises tests to properly test new behavior, re-verifies RED.",
+      "files": [],
+      "expectations": [
+        "Claude writes test files first",
+        "Claude runs new tests and detects they pass unexpectedly",
+        "Claude flags the tests as wrong (should fail in RED phase)",
+        "Claude revises the tests to properly test the NEW behavior",
+        "Claude re-runs revised tests and confirms they now FAIL (proper RED)",
+        "Claude does NOT proceed to GREEN phase with passing tests"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Add rate limiting to the login endpoint with TDD.",
+      "expected_output": "Claude detects dirty worktree and stops — asks user to commit or stash before proceeding.",
+      "files": [],
+      "expectations": [
+        "Claude checks git status for uncommitted changes in Phase 1",
+        "Claude detects dirty worktree (uncommitted changes exist)",
+        "Claude stops and asks the user to commit or stash changes",
+        "Claude does NOT write any test files or production code",
+        "Claude does NOT proceed past Phase 1"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Add input sanitization to the comment submission function using TDD.",
+      "expected_output": "Codex unavailable: Phase 3 test audit degrades gracefully (skipped), but Phase 6 implementation review fails closed (stops).",
+      "files": [],
+      "expectations": [
+        "Claude writes tests first and verifies RED",
+        "Claude checks for mcp__codex__codex at Phase 3 and notes 'Codex unavailable — test audit skipped'",
+        "Claude proceeds to implement despite Codex being unavailable at Phase 3 (graceful degradation)",
+        "Claude checks for mcp__codex__codex again at Phase 6",
+        "Claude stops at Phase 6 and tells user Codex is required for final review",
+        "Claude does NOT deliver without the Phase 6 Codex review"
+      ]
+    }
+  ]
+}
