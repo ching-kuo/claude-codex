@@ -97,11 +97,31 @@ After all tasks complete (either path):
 
 **Codex availability check**: `mcp__codex__codex` MUST be listed in the available tools (either in the tool list or in `<available-deferred-tools>`). If the tool is genuinely absent from both locations (i.e. the MCP server is not configured or not responding), fall back to Route A and announce: "Codex MCP unavailable — falling back to Claude direct implementation." This fallback is ONLY for when `mcp__codex__codex` is technically inaccessible. It MUST NOT be used because a task seems "too simple for Codex" or because Claude judges direct editing would be faster.
 
-**Note on agent spawning**: Codex runs in a sandboxed shell and cannot spawn Claude agents directly. Instead, Claude spawns a subagent per task — each subagent owns its Codex MCP session for that task, keeping both the main context and each Codex session scoped and clean.
-
 Read `codex-architect-role.md` from this skill directory and inject as `developer-instructions` for all Codex calls.
 
-**Step B1 — Dispatch per-task subagents (if plan has 3+ tasks)**
+**Step B1 — Dispatch to Codex**
+
+Choose the path based on how the task was provided in Phase 0:
+
+---
+
+**Path 1 (plan file input)** — Pass plan file to Codex; Codex uses agents for parallel execution
+
+When the input was a plan file path, make a single Codex call with the plan file path. Codex reads the plan, identifies task dependencies, and spawns sub-agents to run independent tasks in parallel.
+
+Call `mcp__codex__codex`:
+- prompt: `"Read the plan file at \`{plan_file_path}\`. Implement all tasks listed in the plan. For tasks with no shared file conflicts or ordering dependencies, use sub-agents to run them in parallel. For dependent tasks, execute sequentially after prerequisites complete."`
+- sandbox: `"workspace-write"`
+- approval-policy: `"on-failure"`
+- developer-instructions: `{content of codex-architect-role.md}` + `"\nBe concise. Output result only, no reasoning process."`
+
+Save the returned `threadId`. Proceed to Step B2.
+
+---
+
+**Path 2 (direct task description, 3+ tasks)** — Claude dispatches per-task subagents sequentially
+
+**Note on agent spawning**: Codex runs in a sandboxed shell and cannot spawn Claude agents directly. For direct task descriptions with 3+ tasks, Claude spawns a subagent per task — each subagent owns its Codex MCP session for that task, keeping both the main context and each Codex session scoped and clean.
 
 For each implementation task (sequentially):
 
@@ -122,14 +142,16 @@ Save the threadId. Run lint/tests scoped to changed files to verify. If failures
 
 **Important**: Each subagent owns its own Codex `threadId`. There is no shared threadId across tasks. The outer review loop (Step B3) therefore uses the `code-reviewer` Task agent — not `mcp__codex__codex-reply` — since there is no single session to reply to.
 
-**If plan has fewer than 3 tasks**, call Codex directly:
+---
+
+**Path 3 (direct task description, <3 tasks)** — Direct Codex call
 
 Call `mcp__codex__codex` (iteration 1) or `mcp__codex__codex-reply` (iterations 2-3):
-- prompt (first call): "Implement the following task.\n\nTask: {task}\n\nContext:\n{key file contents}"
-- prompt (retry): "Fix the following issues found in code review:\n\n{reviewer feedback verbatim}"
-- sandbox: "workspace-write"
-- approval-policy: "on-failure"
-- developer-instructions: {content of codex-architect-role.md} + "\nBe concise. Output result only, no reasoning process."
+- prompt (first call): `"Implement the following task.\n\nTask: {task}\n\nContext:\n{key file contents}"`
+- prompt (retry): `"Fix the following issues found in code review:\n\n{reviewer feedback verbatim}"`
+- sandbox: `"workspace-write"`
+- approval-policy: `"on-failure"`
+- developer-instructions: `{content of codex-architect-role.md}` + `"\nBe concise. Output result only, no reasoning process."`
 
 Save the returned `threadId`. Reuse it for all subsequent calls.
 
